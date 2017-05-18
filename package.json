@@ -1,0 +1,34 @@
+{
+  "name": "wx-queue-request",
+  "version": "1.0.0",
+  "description": "async request queue control",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "rollup -c -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoeZheng2015/wx-queue-request.git"
+  },
+  "keywords": [
+    "wxapp",
+    "requset",
+    "queue"
+  ],
+  "author": "joezheng",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JoeZheng2015/wx-queue-request/issues"
+  },
+  "homepage": "https://github.com/JoeZheng2015/wx-queue-request#readme",
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb-base": "^11.2.0",
+    "rollup": "^0.41.6",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-eslint": "^3.0.0",
+    "rollup-plugin-uglify": "^1.0.2",
+    "rollup-watch": "^3.2.2"
+  }
+}
