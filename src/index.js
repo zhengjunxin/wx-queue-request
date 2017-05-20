@@ -1,10 +1,10 @@
 import Queue from './Queue'
 
-const queue = new Queue((task, callback) => task(callback), 10)
+const q = new Queue((task, callback) => task(callback), 10)
 
-function queueRequest() {
+function queueRequest(request) {
     return (obj) => {
-        queue.push((callback) => {
+        q.push((callback) => {
             const originComplete = obj.complete
             obj.complete = (...args) => {
                 callback()
@@ -12,11 +12,22 @@ function queueRequest() {
                     originComplete(...args)
                 }
             }
-            wx.request(obj)
+            request(obj)
         })
     }
 }
 
+function queue() {
+    const request = wx.request
+
+    Object.defineProperty(wx, 'request', {
+        get() {
+            return queueRequest(request)
+        }
+    })
+}
+
 export default {
     queueRequest,
+    queue,
 }
