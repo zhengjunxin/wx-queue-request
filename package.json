@@ -1,13 +1,13 @@
 {
   "name": "wx-queue-request",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "管理微信小程序 wx.request 方法的并发数",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "rollup -c rollup.test.js && mocha",
     "dev": "rollup -c -w",
     "pro": "NODE_ENV=production rollup -c",
-    "build": "npm run pro",
+    "build": "npm run test && npm run pro",
     "prepublish": "npm run build"
   },
   "repository": {
@@ -28,6 +28,8 @@
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-preset-latest": "^6.24.1",
+    "chai": "^3.5.0",
+    "mocha": "^3.4.1",
     "rollup": "^0.41.6",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-eslint": "^3.0.0",
