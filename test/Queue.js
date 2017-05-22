@@ -45,6 +45,17 @@ var checkCallback = function checkCallback(worker) {
     }
 };
 
+var onlyOnce = function onlyOnce(fn) {
+    return function () {
+        if (fn === null) {
+            throw new Error('Callback was already called');
+        }
+        var callFn = fn;
+        fn = null;
+        return callFn.apply(undefined, arguments);
+    };
+};
+
 var Queue = function () {
     function Queue(queue, concurrency) {
         var _this = this;
@@ -77,8 +88,6 @@ var Queue = function () {
         this._idle = true;
         this.paused = false;
         this.enableDrain = true;
-
-        this.bulk();
     }
 
     createClass(Queue, [{
@@ -86,44 +95,13 @@ var Queue = function () {
         value: function bulk() {
             var _this2 = this;
 
-            setTimeout(function () {
-                var bulkNum = Math.min(_this2._concurrency, _this2._workers.length);
-                if (bulkNum) {
-                    for (var i = 0; i < bulkNum; i++) {
-                        _this2.next();
-                    }
-                } else {
-                    _this2._drain();
-                }
-            }, 0);
-        }
-    }, {
-        key: 'run',
-        value: function run(worker) {
-            function done() {
-                if (done.called) {
-                    throw new Error('Callback was already called');
-                }
-                done.called = true;
-                this.pull(worker);
-
-                for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-                    args[_key] = arguments[_key];
-                }
-
-                if (args && args[0] && args[0] instanceof Error && typeof this.error === 'function') {
-                    this.error.apply(this, args.concat([worker.task]));
-                }
-                if (typeof worker.callback === 'function') {
-                    worker.callback.apply(worker, args);
-                }
-                if (this._workersList.length <= this._concurrency - this.buffer && typeof this.unsaturated === 'function') {
-                    this.unsaturated();
-                }
+            if (this._workers.length) {
+                setTimeout(function () {
+                    _this2.process();
+                }, 0);
+            } else {
                 this._drain();
-                this.next();
             }
-            this.queue(worker.task, done.bind(this));
         }
     }, {
         key: 'push',
@@ -137,23 +115,47 @@ var Queue = function () {
                 checkCallback(worker);
                 _this3._workers.push(worker);
             });
+            this.bulk();
         }
     }, {
-        key: 'next',
-        value: function next() {
-            if (!this.paused && this.concurrency > this._workersList.length && this._workers.length) {
-                var worker = this._workers.shift();
+        key: 'process',
+        value: function process() {
+            var _this4 = this;
 
-                if (worker) {
-                    this._workersList.push(worker);
-                    if (this._workers.length === 0 && typeof this.empty === 'function') {
-                        this.empty();
-                    }
-                    if (this._workersList.length === this._concurrency && typeof this.saturated === 'function') {
-                        this.saturated();
-                    }
-                    this.run(worker);
+            var _loop = function _loop() {
+                var worker = _this4._workers.shift();
+
+                _this4._workersList.push(worker);
+                if (_this4._workers.length === 0 && typeof _this4.empty === 'function') {
+                    _this4.empty();
                 }
+                if (_this4._workersList.length === _this4._concurrency && typeof _this4.saturated === 'function') {
+                    _this4.saturated();
+                }
+
+                _this4.queue(worker.task, onlyOnce(function () {
+                    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                        args[_key] = arguments[_key];
+                    }
+
+                    _this4.pull(worker);
+
+                    if (args && args[0] && args[0] instanceof Error && typeof _this4.error === 'function') {
+                        _this4.error.apply(_this4, args.concat([worker.task]));
+                    }
+                    if (typeof worker.callback === 'function') {
+                        worker.callback.apply(worker, args);
+                    }
+                    if (_this4._workersList.length <= _this4._concurrency - _this4.buffer && typeof _this4.unsaturated === 'function') {
+                        _this4.unsaturated();
+                    }
+                    _this4._drain();
+                    _this4.process();
+                }));
+            };
+
+            while (!this.paused && this.concurrency > this._workersList.length && this._workers.length) {
+                _loop();
             }
         }
     }, {
@@ -182,15 +184,16 @@ var Queue = function () {
     }, {
         key: 'unshift',
         value: function unshift(task, callback) {
-            var _this4 = this;
+            var _this5 = this;
 
             this._idle = false;
             var tasks = Array.isArray(task) ? task : [task];
             tasks.forEach(function (t) {
                 var worker = { task: t, callback: callback };
                 checkCallback(worker);
-                _this4._workers.unshift(worker);
+                _this5._workers.unshift(worker);
             });
+            this.bulk();
         }
     }, {
         key: 'idle',

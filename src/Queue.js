@@ -14,6 +14,15 @@ const checkCallback = (worker) => {
     }
 }
 
+const onlyOnce = (fn) => (...args) => {
+    if (fn === null) {
+        throw new Error('Callback was already called')
+    }
+    const callFn = fn
+    fn = null
+    return callFn(...args)
+}
+
 class Queue {
     constructor(queue, concurrency) {
         this.queue = queue
@@ -42,43 +51,16 @@ class Queue {
         this._idle = true
         this.paused = false
         this.enableDrain = true
-        
-        this.bulk()
     }
     bulk() {
-        setTimeout(() => {
-            const bulkNum = Math.min(this._concurrency, this._workers.length)
-            if (bulkNum) {
-                for (let i = 0; i < bulkNum; i++) {
-                    this.next()
-                }
-            }
-            else {
-                this._drain()
-            }
-        }, 0)
-    }
-    run(worker) {
-        function done(...args) {
-            if (done.called) {
-                throw new Error('Callback was already called')
-            }
-            done.called = true
-            this.pull(worker)
-
-            if (args && args[0] && args[0] instanceof Error && typeof this.error === 'function') {
-                this.error(...args, worker.task)
-            }
-            if (typeof worker.callback === 'function') {
-                worker.callback(...args)
-            }
-            if (this._workersList.length <= this._concurrency - this.buffer && typeof this.unsaturated === 'function') {
-                this.unsaturated()
-            }
-            this._drain()
-            this.next()
+        if (this._workers.length) {
+            setTimeout(() => {
+                this.process()
+            }, 0)
         }
-        this.queue(worker.task, done.bind(this))
+        else {
+            this._drain()
+        }
     }
     push(task, callback) {
         this._idle = false
@@ -88,21 +70,35 @@ class Queue {
             checkCallback(worker)
             this._workers.push(worker)
         })
+        this.bulk()
     }
-    next() {
-        if (!this.paused && this.concurrency > this._workersList.length && this._workers.length) {
+    process() {
+        while (!this.paused && this.concurrency > this._workersList.length && this._workers.length) {
             const worker = this._workers.shift()
 
-            if (worker) {
-                this._workersList.push(worker)
-                if (this._workers.length === 0 && typeof this.empty === 'function') {
-                    this.empty()
-                }
-                if (this._workersList.length === this._concurrency && typeof this.saturated === 'function') {
-                    this.saturated()
-                }
-                this.run(worker)
+            this._workersList.push(worker)
+            if (this._workers.length === 0 && typeof this.empty === 'function') {
+                this.empty()
             }
+            if (this._workersList.length === this._concurrency && typeof this.saturated === 'function') {
+                this.saturated()
+            }
+
+            this.queue(worker.task, onlyOnce((...args) => {
+                this.pull(worker)
+
+                if (args && args[0] && args[0] instanceof Error && typeof this.error === 'function') {
+                    this.error(...args, worker.task)
+                }
+                if (typeof worker.callback === 'function') {
+                    worker.callback(...args)
+                }
+                if (this._workersList.length <= this._concurrency - this.buffer && typeof this.unsaturated === 'function') {
+                    this.unsaturated()
+                }
+                this._drain()
+                this.process()
+            }))
         }
     }
     length() {
@@ -128,6 +124,7 @@ class Queue {
             checkCallback(worker)
             this._workers.unshift(worker)
         })
+        this.bulk()
     }
     idle() {
         return this._idle
