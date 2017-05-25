@@ -26,33 +26,37 @@ const onlyOnce = (fn) => (...args) => {
 class Queue {
     constructor(queue, concurrency) {
         this.queue = queue
-        this._concurrency = checkConcurrency(concurrency)
-        this.buffer = this._concurrency / 4
+        this.concurrency = checkConcurrency(concurrency)
+        this.buffer = this.concurrency / 4
 
-        Object.defineProperties(this, {
-            'concurrency': {
-                get: () => {
-                    return this._concurrency
-                },
-                set: (value) => {
-                    this._concurrency = value
-                    this.buffer = this._concurrency / 4
-                    this.bulk()
-                }
-            },
-            'started': {
-                get: () => {
-                    return !this.idle()
-                }
-            }
-        })
         this._workers = []
         this._workersList = []
-        this._idle = true
         this.paused = false
         this.enableDrain = true
+        this.started = false
     }
-    bulk() {
+    push(task, callback) {
+        this.insert(task, callback, true)
+    }
+    unshift(task, callback) {
+        this.insert(task, callback, false)
+    }
+    insert(task, callback, isPush) {
+        this.started = true
+        const tasks = Array.isArray(task) ? task : [task]
+        for (let i = 0; i < tasks.length; i++) {
+            const worker = {
+                task: tasks[i],
+                callback
+            }
+            checkCallback(worker)
+            if (isPush) {
+                this._workers.push(worker)
+            }
+            else {
+                this._workers.unshift(worker)
+            }
+        }
         if (this._workers.length) {
             setTimeout(() => {
                 this.process()
@@ -62,16 +66,6 @@ class Queue {
             this._drain()
         }
     }
-    push(task, callback) {
-        this._idle = false
-        const tasks = Array.isArray(task) ? task : [task]
-        tasks.forEach(t => {
-            const worker = {task: t, callback}
-            checkCallback(worker)
-            this._workers.push(worker)
-        })
-        this.bulk()
-    }
     process() {
         while (!this.paused && this.concurrency > this._workersList.length && this._workers.length) {
             const worker = this._workers.shift()
@@ -80,20 +74,20 @@ class Queue {
             if (this._workers.length === 0 && typeof this.empty === 'function') {
                 this.empty()
             }
-            if (this._workersList.length === this._concurrency && typeof this.saturated === 'function') {
+            if (this._workersList.length === this.concurrency && typeof this.saturated === 'function') {
                 this.saturated()
             }
 
             this.queue(worker.task, onlyOnce((...args) => {
                 this.pull(worker)
 
-                if (args && args[0] && args[0] instanceof Error && typeof this.error === 'function') {
+                if (args[0] && typeof this.error === 'function') {
                     this.error(...args, worker.task)
                 }
                 if (typeof worker.callback === 'function') {
                     worker.callback(...args)
                 }
-                if (this._workersList.length <= this._concurrency - this.buffer && typeof this.unsaturated === 'function') {
+                if (this._workersList.length <= this.concurrency - this.buffer && typeof this.unsaturated === 'function') {
                     this.unsaturated()
                 }
                 this._drain()
@@ -116,18 +110,8 @@ class Queue {
     running() {
         return this._workersList.length
     }
-    unshift(task, callback) {
-        this._idle = false
-        const tasks = Array.isArray(task) ? task : [task]
-        tasks.forEach(t => {
-            const worker = {task: t, callback}
-            checkCallback(worker)
-            this._workers.unshift(worker)
-        })
-        this.bulk()
-    }
     idle() {
-        return this._idle
+        return this._workers.length === 0 && this._workersList.length === 0
     }
     pause() {
         this.paused = true
@@ -135,19 +119,17 @@ class Queue {
     resume() {
         this.paused = false
 
-        this.bulk()
+        this.process()
     }
     kill() {
         this.enableDrain = false
         this._workers.length = 0
-        this._idle = true
     }
     _drain() {
-        if (this._workersList.length === 0 && this._workers.length === 0 && typeof this.drain === 'function') {
-            this._idle = true
-            if (this.enableDrain) {
-                this.drain()
-            }
+        const {_workersList, _workers, drain, enableDrain} = this
+
+        if (_workersList.length === 0 && _workers.length === 0 && enableDrain && typeof drain === 'function') {
+            this.drain()
         }
     }
     remove(callback) {
