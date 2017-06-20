@@ -1,8 +1,11 @@
 import Queue from './Queue'
 
-const q = new Queue((task, callback) => task(callback), 10)
+function queueRequest(request, concurrency = 10) {
+    if (typeof request !== 'function') {
+        throw Error('request must be function')
+    }
+    const q = new Queue((task, callback) => task(callback), concurrency)
 
-function queueRequest(request) {
     return (obj) => {
         q.push((callback) => {
             const originComplete = obj.complete
@@ -17,12 +20,12 @@ function queueRequest(request) {
     }
 }
 
-function queue() {
+function queue(concurrency) {
     const request = wx.request
 
     Object.defineProperty(wx, 'request', {
         get() {
-            return queueRequest(request)
+            return queueRequest(request, concurrency)
         }
     })
 }
