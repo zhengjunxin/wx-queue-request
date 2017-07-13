@@ -1,13 +1,16 @@
 # wx-queue-request
-管理微信小程序 `wx.request` 方法的并发数，解决请求数大于 10 时，直接不请求的问题。
+
+管理微信小程序 `wx.request` 方法的并发数，解决请求数大于 10 时，直接不请求的问题。如果需要 `wx.request` 方法支持 Promise，可以使用 [wx-promise-request](https://github.com/zhengjunxin/wx-promise-request) 库哦。
 
 ## 下载
+
 由于小程序不支持 npm，所以直接右键保存 [index.js](https://joezheng2015.github.io/wx-queue-request/dist/index.js) 文件即可。
 
 ## 使用
+
 在 app.js 引入并执行即可
 
-``` javascript
+```js
 import { queue } from './wx-queue-request'
 queue()
 
@@ -25,6 +28,7 @@ wx.request({url: 'test.php'})
 wx.request({url: 'test.php'})
 wx.request({url: 'test.php'})
 ```
+
 ## API
 
 ### `queue([concurrency])`
@@ -49,4 +53,5 @@ export default queueRequest(wx.request, 10)
 ```
 
 ## License
+
 MIT
