@@ -30,7 +30,7 @@ function queue(concurrency) {
     })
 }
 
-export default {
+export {
     queueRequest,
     queue,
 }
