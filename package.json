@@ -1,6 +1,6 @@
 {
   "name": "wx-queue-request",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "管理微信小程序 wx.request 方法的并发数",
   "main": "src/index.js",
   "scripts": {
