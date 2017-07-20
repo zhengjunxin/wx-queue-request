@@ -4,7 +4,7 @@
   "description": "管理微信小程序 wx.request 方法的并发数",
   "main": "src/index.js",
   "scripts": {
-    "test": "rollup -c rollup.test.js && mocha",
+    "test": "mocha --compilers js:babel-core/register",
     "dev": "rollup -c -w",
     "pro": "NODE_ENV=production rollup -c",
     "build": "npm run test && npm run pro",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-preset-latest": "^6.24.1",
+    "babel-register": "^6.24.1",
     "chai": "^3.5.0",
     "mocha": "^3.4.1",
     "rollup": "^0.41.6",

@@ -1,7 +1,6 @@
-var Queue = require('./Queue');
-var expect = require('chai').expect;
-var assert = require('assert');
-
+import Queue from '../src/Queue'
+import {expect} from 'chai'
+import assert from 'assert'
 
 describe('new Queue', function(){
     // several tests of these tests are flakey with timing issues
