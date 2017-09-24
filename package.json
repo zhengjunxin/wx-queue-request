@@ -28,7 +28,7 @@
   "devDependencies": {
     "ava": "^0.22.0",
     "babel-plugin-external-helpers": "^6.22.0",
-    "babel-preset-latest": "^6.24.1",
+    "babel-preset-env": "^1.6.0",
     "babel-register": "^6.24.1",
     "rollup": "^0.41.6",
     "rollup-plugin-babel": "^2.7.1",
@@ -39,11 +39,6 @@
   "ava": {
     "require": [
       "babel-register"
-    ]
-  },
-  "babel": {
-    "presets": [
-      "latest"
     ]
   }
 }
