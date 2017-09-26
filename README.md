@@ -1,5 +1,7 @@
 # wx-queue-request
 
+[![Build Status](https://travis-ci.org/zhengjunxin/wx-queue-request.svg?branch=master)](https://travis-ci.org/zhengjunxin/wx-queue-request)
+
 管理微信小程序 `wx.request` 方法的并发数，解决请求数大于 10 时，直接不请求的问题。如果需要 `wx.request` 方法支持 Promise，可以使用 [wx-promise-request](https://github.com/zhengjunxin/wx-promise-request) 库哦。
 
 ## 下载
