@@ -1,13 +1,13 @@
-import Queue from './Queue'
+import q from './queue'
 
 function queueRequest(request, concurrency = 10) {
     if (typeof request !== 'function') {
         throw Error('request must be function')
     }
-    const q = new Queue((task, callback) => task(callback), concurrency)
+    const queue = q((task, callback) => task(callback), concurrency)
 
     return (obj) => {
-        q.push((callback) => {
+        queue.push((callback) => {
             const originComplete = obj.complete
             obj.complete = (...args) => {
                 callback()
